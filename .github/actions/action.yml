@@ -87,6 +87,22 @@ runs:
           # Set CONFIG Environment Variable
           echo "CONFIG=${{ inputs.model }}" >> $GITHUB_ENV
 
+      - name: Set Environment Variable # 设置内核环境变量
+        shell: bash
+        run: |
+          # CONFIG==OP12
+          # PLATFORM_DIR=/home/runner/work/OnePlus_KernelSU_SUSFS/OnePlus_KernelSU_SUSFS/OP12/kernel_platform
+          WORKSPACE_DIR="$GITHUB_WORKSPACE/$CONFIG"
+          PLATFORM_DIR="$WORKSPACE_DIR/kernel_platform"
+          COMMON_DIR="$PLATFORM_DIR/common"
+          DEFCONFIG="$COMMON_DIR/arch/arm64/configs/gki_defconfig"
+
+          # Set working DIR as an environment variable for future steps
+          echo "WORKSPACE=$WORKSPACE_DIR" >> $GITHUB_ENV
+          echo "PLATFORM=$PLATFORM_DIR" >> $GITHUB_ENV
+          echo "COMMON=$COMMON_DIR" >> $GITHUB_ENV
+          echo "DEFCONFIG=$DEFCONFIG" >> $GITHUB_ENV
+
       - name: Clone AnyKernel3 and Other Dependencies
         shell: bash
         run: |
@@ -134,7 +150,19 @@ runs:
           # Sync repo and apply patches
           $REPO --version
           $REPO --trace sync -c --no-clone-bundle --no-tags --optimized-fetch -j$(nproc --all) --fail-fast
-      
+
+          # git clone https://gitlab.com/kei-space/clang/r522817.git $PLATFORM/prebuilts/clang/host/linux-x86/clang-r522817
+          # $CONFIG/kernel_platform/prebuilts/clang/host/linux-x86/clang-r547379
+          
+          rm -rf "$PLATFORM/prebuilts/clang/host/linux-x86/clang-r510928"
+          echo "list $GITHUB_WORKSPACE/$CONFIG..."
+          tree -a -L 3 $GITHUB_WORKSPACE/$CONFIG
+          
+          # sed -i 's/r510928/r522817/g' $PLATFORM/common/build.config.constants
+          sed -i 's/r510928/r547379/g' $PLATFORM/msm-kernel/build.config.constants
+          sed -i 's/r510928/r547379/g' $PLATFORM/.source_date_epoch_dir/build.config.constants
+          sed -i '/VERSIONS = \[/,/\]/c\VERSIONS = [\n    # keep sorted\n    "r547379",\n]' $PLATFORM/prebuilts/clang/host/linux-x86/kleaf/versions.bzl
+
       - name: Add KernelSU Next
         shell: bash
         run: |
